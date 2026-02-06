@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using System.Threading;
 using System.Windows.Forms;
+using DSharpPlus;
 using SCP_079_DISCORD_BOT.Components;
 using SCP_079_DISCORD_BOT.Components.Enums;
 
@@ -11,7 +12,7 @@ public class Program
     public static readonly string Author = "Morkamo";
     public static readonly string Version = "0.0.1";
     public static readonly BuildType BuildType = BuildType.Debug;
-
+    
     [STAThread]
     private static void Main()
     {

@@ -8,6 +8,8 @@ public sealed class TrayApplicationContext : ApplicationContext
 {
     private bool _isOpened = true;
     private readonly NotifyIcon _notifyIcon;
+    private DiscordClient? _discord;
+    private bool _isExiting = false;
 
     public TrayApplicationContext(Config config)
     {
@@ -48,14 +50,14 @@ public sealed class TrayApplicationContext : ApplicationContext
     {
         try
         {
-            var discord = new DiscordClient(new DiscordConfiguration
+            _discord = new DiscordClient(new DiscordConfiguration
             {
                 Token = config.BotSettings.Token,
                 TokenType = TokenType.Bot,
                 Intents = DiscordIntents.AllUnprivileged | DiscordIntents.MessageContents
             });
 
-            discord.Ready += (_, _) =>
+            _discord.Ready += (_, _) =>
             {
                 Utils.BotLog(
                     $"[{Program.BuildType}] SCP-079 v{Program.Version} by {Program.Author} has been started!",
@@ -70,7 +72,7 @@ public sealed class TrayApplicationContext : ApplicationContext
                 return Task.CompletedTask;
             };
 
-            await discord.ConnectAsync();
+            await _discord.ConnectAsync();
         }
         catch (Exception e)
         {
@@ -80,6 +82,11 @@ public sealed class TrayApplicationContext : ApplicationContext
 
     private async void ExitAsync()
     {
+        if (_isExiting)
+            return;
+
+        _isExiting = true;
+        
         ConsoleWindow.Show();
         
         Utils.BotLog("SCP-079 is shutdowning...", ConsoleColor.Magenta);
@@ -89,6 +96,12 @@ public sealed class TrayApplicationContext : ApplicationContext
 
         _notifyIcon.Visible = false;
         _notifyIcon.Dispose();
+        
+        if (_discord != null)
+        {
+            await _discord.DisconnectAsync();
+        }
+        
         ExitThread();
     }
 }
