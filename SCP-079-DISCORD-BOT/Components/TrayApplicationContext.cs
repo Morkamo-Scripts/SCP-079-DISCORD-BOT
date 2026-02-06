@@ -62,7 +62,7 @@ public sealed class TrayApplicationContext : ApplicationContext
                 Token = config.BotSettings.Token,
                 TokenType = TokenType.Bot,
                 Intents = DiscordIntents.AllUnprivileged | DiscordIntents.MessageContents,
-                MinimumLogLevel = LogLevel.Information
+                MinimumLogLevel = LogLevel.Error
             });
 
             _discord.Ready += (_, _) =>
@@ -119,7 +119,7 @@ public sealed class TrayApplicationContext : ApplicationContext
         
         Utils.BotLog("SCP-079 is shutdowning...", ConsoleColor.Magenta);
         await Task.Delay(2000);
-        Utils.BotLog("GoodBye!", ConsoleColor.Cyan);
+        Utils.BotLog("GoodBye!", ConsoleColor.Magenta);
         await Task.Delay(2000);
 
         _notifyIcon.Visible = false;

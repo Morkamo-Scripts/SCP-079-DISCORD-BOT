@@ -9,7 +9,7 @@ namespace SCP_079_DISCORD_BOT;
 public class Program
 {
     public static readonly string Author = "Morkamo";
-    public static readonly string Version = "0.0.1";
+    public static readonly string Version = "0.0.2";
     public static readonly BuildType BuildType = BuildType.Debug;
     
     public static Config? Config;
