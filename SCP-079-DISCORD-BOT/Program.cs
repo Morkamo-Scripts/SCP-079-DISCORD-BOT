@@ -1,7 +1,6 @@
-﻿using System.Text.Json;
-using System.Threading;
-using System.Windows.Forms;
-using DSharpPlus;
+﻿using System.Runtime.InteropServices;
+using System.Text;
+using System.Text.Json;
 using SCP_079_DISCORD_BOT.Components;
 using SCP_079_DISCORD_BOT.Components.Enums;
 
@@ -13,9 +12,23 @@ public class Program
     public static readonly string Version = "0.0.1";
     public static readonly BuildType BuildType = BuildType.Debug;
     
+    public static Config? Config;
+    
+    [DllImport("kernel32.dll")]
+    private static extern bool SetConsoleOutputCP(uint wCodePageId);
+
+    [DllImport("kernel32.dll")]
+    private static extern bool SetConsoleCP(uint wCodePageId);
+    
     [STAThread]
     private static void Main()
     {
+        SetConsoleOutputCP(65001);
+        SetConsoleCP(65001);
+
+        Console.InputEncoding = Encoding.UTF8;
+        Console.OutputEncoding = Encoding.UTF8;
+        
         const string mutexName = "SCP-079-DISCORD-BOT-SINGLETON";
         using var mutex = new Mutex(true, mutexName, out bool isNew);
 
@@ -29,9 +42,9 @@ public class Program
 
         Console.Title = "SCP-079";
 
-        var config = LoadConfig();
+        Config = LoadConfig();
 
-        if (string.IsNullOrWhiteSpace(config.BotSettings.Token))
+        if (string.IsNullOrWhiteSpace(Config.BotSettings.Token))
         {
             Utils.BotLog("Bot token is missing!", LogType.Error);
             Thread.Sleep(5000);
@@ -41,10 +54,10 @@ public class Program
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
 
-        if (config.ProgramLaunch.StartInSystemTray)
+        if (Config.ProgramLaunch.StartInSystemTray)
             ConsoleWindow.Hide();
 
-        Application.Run(new TrayApplicationContext(config));
+        Application.Run(new TrayApplicationContext(Config));
     }
 
     private static Config LoadConfig()

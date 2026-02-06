@@ -16,5 +16,6 @@ public class ProgramLaunch
 public class BotSettings
 {
     public string Token { get; set; } = String.Empty;
-    public string CommandPrefix { get; set; } = ";";
+    public string CommandPrefix { get; set; } = "?";
+    public ulong ServerId { get; set; } = 0;
 }

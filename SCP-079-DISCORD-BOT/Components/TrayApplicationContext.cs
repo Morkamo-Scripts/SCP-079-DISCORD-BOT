@@ -1,14 +1,21 @@
 ﻿using System.Reflection;
 using DSharpPlus;
+using DSharpPlus.CommandsNext;
+using DSharpPlus.SlashCommands;
+using Microsoft.Extensions.Logging;
+using SCP_079_DISCORD_BOT.Commands;
 using SCP_079_DISCORD_BOT.Components.Enums;
 
 namespace SCP_079_DISCORD_BOT.Components;
 
 public sealed class TrayApplicationContext : ApplicationContext
 {
-    private bool _isOpened = true;
     private readonly NotifyIcon _notifyIcon;
     private DiscordClient? _discord;
+    private CommandsNextExtension? _commands;
+    private SlashCommandsExtension? _slash;
+    
+    private bool _isOpened = true;
     private bool _isExiting = false;
 
     public TrayApplicationContext(Config config)
@@ -54,7 +61,8 @@ public sealed class TrayApplicationContext : ApplicationContext
             {
                 Token = config.BotSettings.Token,
                 TokenType = TokenType.Bot,
-                Intents = DiscordIntents.AllUnprivileged | DiscordIntents.MessageContents
+                Intents = DiscordIntents.AllUnprivileged | DiscordIntents.MessageContents,
+                MinimumLogLevel = LogLevel.Information
             });
 
             _discord.Ready += (_, _) =>
@@ -71,6 +79,26 @@ public sealed class TrayApplicationContext : ApplicationContext
                 
                 return Task.CompletedTask;
             };
+            
+            _slash = _discord.UseSlashCommands();
+
+            if (Program.Config?.BotSettings.ServerId == null || Program.Config?.BotSettings.ServerId == 0)
+            {
+                Utils.BotLog("Bot will not send commands globally. Specify server id (GuildId) in config!", LogType.Error);
+                await Task.Delay(5000);
+                ExitThread();
+                return;
+            }
+            
+            _slash.RegisterCommands<BasicSlashCommands>(Program.Config?.BotSettings.ServerId);
+            
+            _commands = _discord.UseCommandsNext(new CommandsNextConfiguration
+            {
+                StringPrefixes = new[] { config.BotSettings.CommandPrefix },
+                EnableMentionPrefix = true,
+                EnableDms = false
+            });
+            _commands.RegisterCommands<BasicPrefixCommands>();
 
             await _discord.ConnectAsync();
         }

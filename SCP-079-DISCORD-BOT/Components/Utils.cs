@@ -12,7 +12,7 @@ public static class Utils
         {
             case LogType.Info:
                 foregroundColor = ConsoleColor.DarkCyan;
-                messagePrefix = "SCP-079";
+                messagePrefix = "Info";
                 break;
             case LogType.Warning:
                 foregroundColor = ConsoleColor.Yellow;
