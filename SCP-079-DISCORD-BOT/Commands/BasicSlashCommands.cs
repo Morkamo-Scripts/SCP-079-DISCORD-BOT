@@ -74,11 +74,23 @@ public sealed class BasicSlashCommands : ApplicationCommandModule
                      $"'{nameof(Timeout)}' -> #{ctx.Channel.Name}");
         
         Utils.BotLog($"[{DateTime.Now}] Пользователь '{ctx.Member?.DisplayName}' отправил пользователя '{target.DisplayName}' " +
-                     $"подумать о своём поведении.", LogType.Complete);
+                     $"подумать о своём поведении.", ConsoleColor.DarkYellow, LogType.Info);
+        
+        var embed = new DiscordEmbedBuilder
+        {
+            Title = "Применен тайм-аут",
+            Description =
+                $"Пользователь **{target.DisplayName}** заглушен!\n" +
+                $"Длительность: **{days} д. {hours} ч. {mins} м.**\n" +
+                $"Причина: **{reason}**",
+            Color = DiscordColor.Orange,
+            Footer = new DiscordEmbedBuilder.EmbedFooter
+            {
+                Text = $"От: {ctx.Member?.DisplayName}"
+            },
+            Timestamp = DateTimeOffset.Now
+        };
 
-        await ctx.CreateResponseAsync(
-            $"Пользователь **@{target.DisplayName}** заглушен!\n" +
-            $"Длительность: **{days} д. {hours} ч. {mins} м.**"
-        );
+        await ctx.CreateResponseAsync(embed);
     }
 }

@@ -1,18 +1,22 @@
 ﻿using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
+using Npgsql;
+using Npgsql.NameTranslation;
 using SCP_079_DISCORD_BOT.Components;
 using SCP_079_DISCORD_BOT.Components.Enums;
+using SCP_079_DISCORD_BOT.Database;
 
 namespace SCP_079_DISCORD_BOT;
 
 public class Program
 {
     public static readonly string Author = "Morkamo";
-    public static readonly string Version = "0.0.2";
+    public static readonly string Version = "0.0.3";
     public static readonly BuildType BuildType = BuildType.Debug;
     
     public static Config? Config;
+    public static DbService? Db;
     
     [DllImport("kernel32.dll")]
     private static extern bool SetConsoleOutputCP(uint wCodePageId);
@@ -51,10 +55,24 @@ public class Program
             return;
         }
 
+        try
+        {
+            var translator = new NpgsqlNullNameTranslator();
+
+            NpgsqlConnection.GlobalTypeMapper.MapEnum<WarnCategory>("warn_category", translator);
+            NpgsqlConnection.GlobalTypeMapper.MapEnum<WarnStatus>("warn_status", translator);
+        }
+        catch (Exception ex)
+        {
+            Utils.BotLog($"PostgreSQL enum mapping failed: {ex.Message}", LogType.Error);
+            Thread.Sleep(5000);
+            return;
+        }
+
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
 
-        if (Config.ProgramLaunch.StartInSystemTray)
+        if (Config.ProgramSettings.StartInSystemTray)
             ConsoleWindow.Hide();
 
         Application.Run(new TrayApplicationContext(Config));
