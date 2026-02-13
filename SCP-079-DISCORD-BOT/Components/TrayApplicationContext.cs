@@ -17,7 +17,7 @@ public sealed class TrayApplicationContext : ApplicationContext
     private SlashCommandsExtension? _slash;
 
     private bool _isOpened = true;
-    private bool _isExiting = false;
+    private bool _isExiting;
 
     public TrayApplicationContext(Config config)
     {
@@ -96,7 +96,7 @@ public sealed class TrayApplicationContext : ApplicationContext
                 );
 
                 Utils.BotLog(
-                    $"[PS] For only femboy users!",
+                    "[PS] For only femboy users!",
                     LogType.Warning
                 );
 
@@ -118,6 +118,7 @@ public sealed class TrayApplicationContext : ApplicationContext
 
             _slash.RegisterCommands<BasicSlashCommands>(Program.Config?.BotSettings.ServerId);
             _slash.RegisterCommands<WarnSlashCommands>(Program.Config?.BotSettings.ServerId);
+            _slash.RegisterCommands<LinkSteamSlashCommand>(Program.Config?.BotSettings.ServerId);
 
             _commands = _discord.UseCommandsNext(new CommandsNextConfiguration
             {

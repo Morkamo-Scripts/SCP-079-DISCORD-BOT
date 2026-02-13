@@ -1,6 +1,4 @@
-﻿using SCP_079_DISCORD_BOT.Components;
-
-namespace SCP_079_DISCORD_BOT;
+﻿namespace SCP_079_DISCORD_BOT;
 
 public sealed class Config
 {
@@ -12,6 +10,12 @@ public class ProgramSettings
 {
     public bool StartInSystemTray { get; set; } = false;
     public string ConnectionString { get; set; } = String.Empty;
+    
+    public bool ApiEnabled { get; set; } = true;
+    public string ApiHost { get; set; } = "0.0.0.0";
+    public int ApiPort { get; set; } = 5005;
+    public string ApiSecret { get; set; } = "CHANGE_ME_TO_RANDOM_SECRET";
+
 }
 
 public class BotSettings

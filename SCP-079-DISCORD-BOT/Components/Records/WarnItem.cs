@@ -1,6 +1,6 @@
 ﻿using SCP_079_DISCORD_BOT.Components.Enums;
 
-namespace SCP_079_DISCORD_BOT.Database;
+namespace SCP_079_DISCORD_BOT.Components.Records;
 
 public sealed record WarnItem(
     Guid Id,

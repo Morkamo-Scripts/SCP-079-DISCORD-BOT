@@ -2,9 +2,6 @@ using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
 using DSharpPlus.SlashCommands.Attributes;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using SCP_079_DISCORD_BOT.Components;
 using SCP_079_DISCORD_BOT.Components.Enums;
 using SCP_079_DISCORD_BOT.Database;
@@ -158,14 +155,13 @@ public sealed class WarnSlashCommands : ApplicationCommandModule
                 .AddField("Причина:", reason.Trim());
 
             if (!string.IsNullOrWhiteSpace(comment))
-                requestEmbed.AddField("Комментарий:", comment, false);
+                requestEmbed.AddField("Комментарий:", comment);
 
             if (attachments.Count > 0)
             {
                 requestEmbed.AddField(
                     "Вложения:",
-                    string.Join("\n", attachments.Select((a, i) => $"{i + 1}. {a.FileName}")),
-                    false
+                    string.Join("\n", attachments.Select((a, i) => $"{i + 1}. {a.FileName}"))
                 );
             }
 

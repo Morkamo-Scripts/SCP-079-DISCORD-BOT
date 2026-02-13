@@ -1,4 +1,4 @@
-﻿using DSharpPlus.Entities;
+﻿/*using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
 using SCP_079_DISCORD_BOT.Components;
 
@@ -33,4 +33,4 @@ public class ProfileCommand : ApplicationCommandModule
 
         await ctx.CreateResponseAsync(embed);
     }
-}
+}*/

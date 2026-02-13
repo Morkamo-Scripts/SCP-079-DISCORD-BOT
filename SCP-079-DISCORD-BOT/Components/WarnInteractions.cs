@@ -1,16 +1,12 @@
+using System.Collections.Concurrent;
 using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Collections.Concurrent;
-using SCP_079_DISCORD_BOT.Components;
 using SCP_079_DISCORD_BOT.Components.Enums;
+using SCP_079_DISCORD_BOT.Components.Records;
 using SCP_079_DISCORD_BOT.Database;
 
-namespace SCP_079_DISCORD_BOT.Commands;
+namespace SCP_079_DISCORD_BOT.Components;
 
 public static class WarnInteractions
 {
@@ -184,6 +180,7 @@ public static class WarnInteractions
         }
         catch
         {
+            // ignored
         }
     }
 
@@ -204,6 +201,7 @@ public static class WarnInteractions
         }
         catch
         {
+            // ignored
         }
     }
 
@@ -271,10 +269,10 @@ public static class WarnInteractions
                     warn.ExpiresAt.ToUniversalTime().ToString("yyyy-MM-dd HH:mm") + " UTC",
                     true)
                 .AddField("Модератор:", $"<@{moderatorUserId}>", true)
-                .AddField("Причина:", warn.Reason ?? "-", false);
+                .AddField("Причина:", warn.Reason ?? "-");
 
             if (!string.IsNullOrWhiteSpace(warn.ResolutionComment))
-                embed.AddField("Комментарий:", warn.ResolutionComment, false);
+                embed.AddField("Комментарий:", warn.ResolutionComment);
 
             await dm.SendMessageAsync(
                 new DiscordMessageBuilder().AddEmbed(embed)
@@ -283,8 +281,7 @@ public static class WarnInteractions
         catch (Exception ex)
         {
             Utils.BotLog(
-                $"Warn DM failed to {warn.TargetUserId}: {ex.GetType().Name}: {ex.Message}",
-                LogType.Info
+                $"Warn DM failed to {warn.TargetUserId}: {ex.GetType().Name}: {ex.Message}"
             );
         }
     }
@@ -310,7 +307,6 @@ public static class WarnInteractions
         if (e.Id.StartsWith("warn:", StringComparison.OrdinalIgnoreCase))
         {
             await HandleWarnDecisionAsync(client, e);
-            return;
         }
     }
 
@@ -334,25 +330,25 @@ public static class WarnInteractions
             return;
 
         var requestChannelId = Program.Config.BotSettings.Channels.WarnRequestChannelId;
-        if (requestChannelId != 0 && e.Interaction.Channel != null && e.Interaction.Channel.Id != requestChannelId)
+        if (requestChannelId != 0 && e.Interaction?.Channel != null && e.Interaction.Channel.Id != requestChannelId)
         {
             await e.Interaction.CreateResponseAsync(
                 InteractionResponseType.ChannelMessageWithSource,
                 new DiscordInteractionResponseBuilder()
                     .AddEmbed(BuildError("Недоступно", "Обработка предупреждений возможна только в канале заявок."))
-                    .AsEphemeral(true)
+                    .AsEphemeral()
             );
             return;
         }
 
-        var guild = e.Interaction.Guild;
-        if (guild == null || e.Interaction.Channel == null)
+        var guild = e.Interaction?.Guild;
+        if (guild == null || e.Interaction?.Channel == null)
         {
-            await e.Interaction.CreateResponseAsync(
+            await e.Interaction!.CreateResponseAsync(
                 InteractionResponseType.ChannelMessageWithSource,
                 new DiscordInteractionResponseBuilder()
                     .AddEmbed(BuildError("Ошибка", "Сервер или канал недоступны."))
-                    .AsEphemeral(true)
+                    .AsEphemeral()
             );
             return;
         }
@@ -366,7 +362,7 @@ public static class WarnInteractions
                 InteractionResponseType.ChannelMessageWithSource,
                 new DiscordInteractionResponseBuilder()
                     .AddEmbed(BuildError("Недостаточно прав", "У вас нет прав для обработки предупреждений."))
-                    .AsEphemeral(true)
+                    .AsEphemeral()
             );
             return;
         }
@@ -407,7 +403,7 @@ public static class WarnInteractions
 
         ForgetRegisteredMediaContent(warnId);
 
-        Utils.BotLog($"[{DateTime.Now}] Warn {warnId} resolved to {WarnStatus.Aborted} by {member.DisplayName}", LogType.Info);
+        Utils.BotLog($"[{DateTime.Now}] Warn {warnId} resolved to {WarnStatus.Aborted} by {member.DisplayName}");
     }
 
     private static async Task HandleWarnDecisionAsync(DiscordClient client, ComponentInteractionCreateEventArgs e)
@@ -428,7 +424,7 @@ public static class WarnInteractions
                 InteractionResponseType.ChannelMessageWithSource,
                 new DiscordInteractionResponseBuilder()
                     .AddEmbed(BuildError("Недоступно", "Обработка предупреждений возможна только в канале заявок."))
-                    .AsEphemeral(true)
+                    .AsEphemeral()
             );
             return;
         }
@@ -439,7 +435,7 @@ public static class WarnInteractions
                 InteractionResponseType.ChannelMessageWithSource,
                 new DiscordInteractionResponseBuilder()
                     .AddEmbed(BuildError("Ошибка", "Сервер недоступен."))
-                    .AsEphemeral(true)
+                    .AsEphemeral()
             );
             return;
         }
@@ -453,7 +449,7 @@ public static class WarnInteractions
                 InteractionResponseType.ChannelMessageWithSource,
                 new DiscordInteractionResponseBuilder()
                     .AddEmbed(BuildError("Недостаточно прав", "У вас нет прав для обработки предупреждений."))
-                    .AsEphemeral(true)
+                    .AsEphemeral()
             );
             return;
         }
@@ -516,7 +512,7 @@ public static class WarnInteractions
         ForgetRegisteredMedia(warnId);
         ForgetRegisteredMedia(requestMessageId);
 
-        Utils.BotLog($"[{DateTime.Now}] Warn {warnId} resolved to {WarnStatus.Active} by {member.DisplayName}", LogType.Info);
+        Utils.BotLog($"[{DateTime.Now}] Warn {warnId} resolved to {WarnStatus.Active} by {member.DisplayName}");
     }
 
     private static async Task HandleWarnsPaginationAsync(ComponentInteractionCreateEventArgs e)
@@ -615,8 +611,7 @@ public static class WarnInteractions
 
             embed.AddField(
                 $"[ID: {w.WarnNo}] | {w.Category}",
-                text,
-                false
+                text
             );
         }
 
@@ -640,7 +635,7 @@ public static class WarnInteractions
             .WithTitle(title)
             .WithColor(status == WarnStatus.Active ? DiscordColor.SpringGreen : DiscordColor.Red)
             .WithTimestamp(DateTimeOffset.UtcNow)
-            .AddField("ID:", warn != null ? warn.WarnNo.ToString() : warnId.ToString(), false)
+            .AddField("ID:", warn != null ? warn.WarnNo.ToString() : warnId.ToString())
             .AddField("Результат:", status == WarnStatus.Active ? "Принято" : "Отклонено", true)
             .AddField("Модератор:", $"<@{responsibleUserId}>", true);
 
@@ -651,11 +646,11 @@ public static class WarnInteractions
                 .AddField("Отправитель:", $"<@{warn.AuthorUserId}>", true)
                 .AddField("Категория:", warn.Category.ToString(), true)
                 .AddField("Действует до:", $"{warn.ExpiresAt.ToUniversalTime():yyyy-MM-dd HH:mm} UTC", true)
-                .AddField("Причина:", warn.Reason, false);
+                .AddField("Причина:", warn.Reason);
 
             var commentText = !string.IsNullOrWhiteSpace(warn.ResolutionComment) ? warn.ResolutionComment : comment;
             if (!string.IsNullOrWhiteSpace(commentText))
-                embed.AddField("Комментарий:", commentText, false);
+                embed.AddField("Комментарий:", commentText);
         }
 
         return embed.Build();
@@ -684,7 +679,7 @@ public static class WarnInteractions
             .WithTitle("Предупреждение обработано")
             .WithColor(status == WarnStatus.Active ? DiscordColor.SpringGreen : DiscordColor.Red)
             .WithTimestamp(DateTimeOffset.UtcNow)
-            .AddField("ID:", warn != null ? warn.WarnNo.ToString() : warnId.ToString(), false)
+            .AddField("ID:", warn != null ? warn.WarnNo.ToString() : warnId.ToString())
             .AddField("Результат:", status == WarnStatus.Active ? "Принято" : "Отклонено", true)
             .AddField("Модератор:", $"<@{responsibleUserId}>", true);
 
@@ -695,11 +690,11 @@ public static class WarnInteractions
                 .AddField("Отправитель:", $"<@{warn.AuthorUserId}>", true)
                 .AddField("Категория:", warn.Category.ToString(), true)
                 .AddField("Действует до:", $"{warn.ExpiresAt.ToUniversalTime():yyyy-MM-dd HH:mm} UTC", true)
-                .AddField("Причина:", warn.Reason, false);
+                .AddField("Причина:", warn.Reason);
 
             var commentText = !string.IsNullOrWhiteSpace(warn.ResolutionComment) ? warn.ResolutionComment : comment;
             if (!string.IsNullOrWhiteSpace(commentText))
-                embed.AddField("Комментарий:", commentText, false);
+                embed.AddField("Комментарий:", commentText);
         }
 
         await responseChannel.SendMessageAsync(new DiscordMessageBuilder().AddEmbed(embed));

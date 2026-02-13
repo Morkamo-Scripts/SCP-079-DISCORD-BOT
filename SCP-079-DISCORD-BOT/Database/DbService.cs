@@ -1,6 +1,7 @@
 ﻿using Npgsql;
 using NpgsqlTypes;
 using SCP_079_DISCORD_BOT.Components.Enums;
+using SCP_079_DISCORD_BOT.Components.Records;
 
 namespace SCP_079_DISCORD_BOT.Database;
 
@@ -69,7 +70,7 @@ public async Task TestConnectionAsync(CancellationToken ct = default)
         cmd.Parameters.AddWithValue("target_user_id", (long)targetUserId);
         cmd.Parameters.AddWithValue("author_user_id", (long)authorUserId);
         cmd.Parameters.AddWithValue("reason", reason);
-        cmd.Parameters.Add(new NpgsqlParameter("resolution_comment", NpgsqlTypes.NpgsqlDbType.Text)
+        cmd.Parameters.Add(new NpgsqlParameter("resolution_comment", NpgsqlDbType.Text)
         {
             Value = (object?)resolutionComment ?? DBNull.Value
         });
@@ -232,7 +233,7 @@ public async Task TestConnectionAsync(CancellationToken ct = default)
         await using var cmd = new NpgsqlCommand(sql, conn);
         cmd.Parameters.AddWithValue("status", newStatus);
         cmd.Parameters.AddWithValue("responsible_user_id", (long)responsibleUserId);
-        cmd.Parameters.Add(new NpgsqlParameter("resolution_comment", NpgsqlTypes.NpgsqlDbType.Text)
+        cmd.Parameters.Add(new NpgsqlParameter("resolution_comment", NpgsqlDbType.Text)
         {
             Value = (object?)resolutionComment ?? DBNull.Value
         });
@@ -263,7 +264,7 @@ public async Task TestConnectionAsync(CancellationToken ct = default)
         await using var cmd = new NpgsqlCommand(sql, conn);
         cmd.Parameters.AddWithValue("status", WarnStatus.Aborted);
         cmd.Parameters.AddWithValue("responsible_user_id", (long)responsibleUserId);
-        cmd.Parameters.Add(new NpgsqlParameter("resolution_comment", NpgsqlTypes.NpgsqlDbType.Text)
+        cmd.Parameters.Add(new NpgsqlParameter("resolution_comment", NpgsqlDbType.Text)
         {
             Value = (object?)resolutionComment ?? DBNull.Value
         });
@@ -287,7 +288,6 @@ public async Task TestConnectionAsync(CancellationToken ct = default)
         await using var cmd = new NpgsqlCommand(sql, conn);
         return await cmd.ExecuteNonQueryAsync(ct);
     }
-    
     
     public async Task<WarnItem?> GetWarnByIdAsync(Guid warnId, CancellationToken ct = default)
     {
@@ -454,6 +454,166 @@ limit 1;";
             expiresAt,
             resolvedAt,
             resolutionComment
+        );
+    }
+    
+    public async Task EnsureUserRowAsync(ulong discordId, CancellationToken ct = default)
+    {
+        const string sql = @"
+            insert into users (discord_id, linked_steam)
+            values (@discord_id, null)
+            on conflict (discord_id) do nothing;";
+
+        await using var conn = new NpgsqlConnection(_connectionString);
+        await conn.OpenAsync(ct);
+
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("discord_id", (long)discordId);
+
+        await cmd.ExecuteNonQueryAsync(ct);
+    }
+
+    public async Task<long?> GetLinkedSteamAsync(ulong discordId, CancellationToken ct = default)
+    {
+        const string sql = @"
+            select linked_steam
+            from users
+            where discord_id = @discord_id
+            limit 1;";
+
+        await using var conn = new NpgsqlConnection(_connectionString);
+        await conn.OpenAsync(ct);
+
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("discord_id", (long)discordId);
+
+        await using var reader = await cmd.ExecuteReaderAsync(ct);
+
+        if (!await reader.ReadAsync(ct))
+            return null;
+
+        var ord = reader.GetOrdinal("linked_steam");
+        return reader.IsDBNull(ord) ? null : reader.GetInt64(ord);
+    }
+
+    public async Task<ulong?> GetDiscordIdByLinkedSteamAsync(long steamId64, CancellationToken ct = default)
+    {
+        const string sql = @"
+            select discord_id
+            from users
+            where linked_steam = @steamid64
+            limit 1;";
+
+        await using var conn = new NpgsqlConnection(_connectionString);
+        await conn.OpenAsync(ct);
+
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("steamid64", steamId64);
+
+        var result = await cmd.ExecuteScalarAsync(ct);
+        return result is null ? null : (ulong)Convert.ToInt64(result);
+    }
+
+    public async Task<SteamLinkRequestItem?> GetLatestSteamLinkRequestAsync(ulong discordId, CancellationToken ct = default)
+    {
+        const string sql = @"
+            select discord_id, steamid64, code, created_at
+            from steam_link_requests
+            where discord_id = @discord_id
+            order by created_at desc
+            limit 1;";
+
+        await using var conn = new NpgsqlConnection(_connectionString);
+        await conn.OpenAsync(ct);
+
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("discord_id", (long)discordId);
+
+        await using var reader = await cmd.ExecuteReaderAsync(ct);
+
+        if (!await reader.ReadAsync(ct))
+            return null;
+
+        var dId = (ulong)reader.GetInt64(reader.GetOrdinal("discord_id"));
+        var sId = reader.GetInt64(reader.GetOrdinal("steamid64"));
+        var code = reader.GetString(reader.GetOrdinal("code")).Trim();
+        var createdAt = reader.GetFieldValue<DateTimeOffset>(reader.GetOrdinal("created_at"));
+
+        return new SteamLinkRequestItem(dId, sId, code, createdAt);
+    }
+
+    public async Task DeleteSteamLinkRequestsAsync(ulong discordId, CancellationToken ct = default)
+    {
+        const string sql = @"
+            delete from steam_link_requests
+            where discord_id = @discord_id;";
+
+        await using var conn = new NpgsqlConnection(_connectionString);
+        await conn.OpenAsync(ct);
+
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("discord_id", (long)discordId);
+
+        await cmd.ExecuteNonQueryAsync(ct);
+    }
+
+    public async Task CreateSteamLinkRequestAsync(ulong discordId, long steamId64, string code, CancellationToken ct = default)
+    {
+        const string sql = @"
+            insert into steam_link_requests (discord_id, steamid64, code, created_at)
+            values (@discord_id, @steamid64, @code, now());";
+
+        await using var conn = new NpgsqlConnection(_connectionString);
+        await conn.OpenAsync(ct);
+
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("discord_id", (long)discordId);
+        cmd.Parameters.AddWithValue("steamid64", steamId64);
+        cmd.Parameters.AddWithValue("code", code);
+
+        await cmd.ExecuteNonQueryAsync(ct);
+    }
+
+    public async Task<SteamLinkRequestResult> GetOrCreateSteamLinkRequestAsync(
+        ulong discordId,
+        long steamId64,
+        Func<string> codeFactory,
+        TimeSpan reuseWindow,
+        CancellationToken ct = default)
+    {
+        await EnsureUserRowAsync(discordId, ct);
+
+        var linkedSteam = await GetLinkedSteamAsync(discordId, ct);
+        if (linkedSteam is not null)
+            return new SteamLinkRequestResult(SteamLinkRequestResultType.AlreadyLinked, null);
+
+        var ownerDiscordId = await GetDiscordIdByLinkedSteamAsync(steamId64, ct);
+        if (ownerDiscordId is not null && ownerDiscordId.Value != discordId)
+            return new SteamLinkRequestResult(SteamLinkRequestResultType.SteamAlreadyLinkedToAnotherUser, null);
+
+        var latest = await GetLatestSteamLinkRequestAsync(discordId, ct);
+        if (latest is not null)
+        {
+            var age = DateTimeOffset.UtcNow - latest.CreatedAt;
+            if (age < reuseWindow)
+            {
+                return new SteamLinkRequestResult(
+                    SteamLinkRequestResultType.OkExisting,
+                    latest
+                );
+            }
+        }
+
+        await DeleteSteamLinkRequestsAsync(discordId, ct);
+
+        var newCode = codeFactory();
+        await CreateSteamLinkRequestAsync(discordId, steamId64, newCode, ct);
+
+        var created = await GetLatestSteamLinkRequestAsync(discordId, ct);
+
+        return new SteamLinkRequestResult(
+            SteamLinkRequestResultType.OkNew,
+            created
         );
     }
 }

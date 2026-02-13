@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props"
+            Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')"/>
+    <PropertyGroup>
+        <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+        <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+        <ProjectGuid>{147A4E8C-E7B7-48D7-9FD4-BC3AA943E64C}</ProjectGuid>
+        <OutputType>Library</OutputType>
+        <AppDesignerFolder>Properties</AppDesignerFolder>
+        <RootNamespace>Scp079BotIntegration</RootNamespace>
+        <AssemblyName>Scp079BotIntegration</AssemblyName>
+        <TargetFrameworkVersion>v4.8.1</TargetFrameworkVersion>
+        <FileAlignment>512</FileAlignment>
+        <LangVersion>latest</LangVersion>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+        <PlatformTarget>x64</PlatformTarget>
+        <DebugSymbols>true</DebugSymbols>
+        <DebugType>None</DebugType>
+        <Optimize>false</Optimize>
+        <OutputPath>G:\RiderProjects\DarkParadiseSCPSL\Libs</OutputPath>
+        <DefineConstants>DEBUG;TRACE</DefineConstants>
+        <ErrorReport>prompt</ErrorReport>
+        <WarningLevel>4</WarningLevel>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+        <PlatformTarget>x64</PlatformTarget>
+        <DebugType>None</DebugType>
+        <Optimize>true</Optimize>
+        <OutputPath>C:\Users\oneta\AppData\Roaming\EXILED\Plugins</OutputPath>
+        <DefineConstants>TRACE</DefineConstants>
+        <ErrorReport>prompt</ErrorReport>
+        <WarningLevel>4</WarningLevel>
+    </PropertyGroup>
+    <ItemGroup>
+        <Reference Include="0Harmony, Version=2.2.2.0, Culture=neutral, processorArchitecture=MSIL" Private="false">
+            <HintPath>..\packages\Lib.Harmony.2.2.2\lib\net48\0Harmony.dll</HintPath>
+        </Reference>
+        <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL" Private="false">
+            <HintPath>..\packages\ExMod.Exiled.9.13.1\lib\net48\Assembly-CSharp-Publicized.dll</HintPath>
+        </Reference>
+        <Reference Include="Assembly-CSharp-firstpass" Private="false">
+            <HintPath>..\..\Libs\Assembly-CSharp-firstpass.dll</HintPath>
+        </Reference>
+        <Reference Include="CommandSystem.Core" Private="false">
+            <HintPath>..\..\Libs\CommandSystem.Core.dll</HintPath>
+        </Reference>
+        <Reference Include="CommandSystem.Core, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL" Private="false">
+            <HintPath>..\packages\ExMod.Exiled.9.13.1\lib\net48\CommandSystem.Core.dll</HintPath>
+        </Reference>
+        <Reference Include="Exiled.API, Version=9.13.1.0, Culture=neutral, processorArchitecture=Amd64" Private="false">
+            <HintPath>..\packages\ExMod.Exiled.9.13.1\lib\net48\Exiled.API.dll</HintPath>
+        </Reference>
+        <Reference Include="Exiled.CreditTags, Version=9.13.1.0, Culture=neutral, processorArchitecture=Amd64" Private="false">
+            <HintPath>..\packages\ExMod.Exiled.9.13.1\lib\net48\Exiled.CreditTags.dll</HintPath>
+        </Reference>
+        <Reference Include="Exiled.CustomItems, Version=9.13.1.0, Culture=neutral, processorArchitecture=Amd64" Private="false">
+            <HintPath>..\packages\ExMod.Exiled.9.13.1\lib\net48\Exiled.CustomItems.dll</HintPath>
+        </Reference>
+        <Reference Include="Exiled.CustomRoles, Version=9.13.1.0, Culture=neutral, processorArchitecture=Amd64" Private="false">
+            <HintPath>..\packages\ExMod.Exiled.9.13.1\lib\net48\Exiled.CustomRoles.dll</HintPath>
+        </Reference>
+        <Reference Include="Exiled.Events, Version=9.13.1.0, Culture=neutral, processorArchitecture=Amd64" Private="false">
+            <HintPath>..\packages\ExMod.Exiled.9.13.1\lib\net48\Exiled.Events.dll</HintPath>
+        </Reference>
+        <Reference Include="Exiled.Loader, Version=9.13.1.0, Culture=neutral, processorArchitecture=Amd64" Private="false">
+            <HintPath>..\packages\ExMod.Exiled.9.13.1\lib\net48\Exiled.Loader.dll</HintPath>
+        </Reference>
+        <Reference Include="Exiled.Permissions, Version=9.13.1.0, Culture=neutral, processorArchitecture=Amd64" Private="false">
+            <HintPath>..\packages\ExMod.Exiled.9.13.1\lib\net48\Exiled.Permissions.dll</HintPath>
+        </Reference>
+        <Reference Include="LabApi, Version=1.1.1.0, Culture=neutral, processorArchitecture=Amd64" Private="false">
+            <HintPath>..\packages\Northwood.LabAPI.1.1.1\lib\net48\LabApi.dll</HintPath>
+        </Reference>
+        <Reference Include="Mirror" Private="false">
+            <HintPath>..\..\Libs\Mirror.dll</HintPath>
+        </Reference>
+        <Reference Include="Mirror.Components" Private="false">
+            <HintPath>..\..\Libs\Mirror.Components.dll</HintPath>
+        </Reference>
+        <Reference Include="Mono.Security" Private="false">
+            <HintPath>..\..\Libs\Mono.Security.dll</HintPath>
+        </Reference>
+        <Reference Include="NorthwoodLib, Version=1.4.0.0, Culture=neutral, processorArchitecture=MSIL" Private="false">
+            <HintPath>..\packages\ExMod.Exiled.9.13.1\lib\net48\NorthwoodLib.dll</HintPath>
+        </Reference>
+        <Reference Include="RueI, Version=3.1.2.0, Culture=neutral, processorArchitecture=MSIL" Private="false">
+            <HintPath>..\packages\RueI.3.1.2\lib\net48\RueI.dll</HintPath>
+        </Reference>
+        <Reference Include="System" Private="false"/>
+        <Reference Include="System.Core" Private="false"/>
+        <Reference Include="System.Data" Private="false"/>
+        <Reference Include="System.Xml" Private="false"/>
+        <Reference Include="UnityEngine" Private="false">
+            <HintPath>..\..\Libs\UnityEngine.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.CoreModule" Private="false">
+            <HintPath>..\..\Libs\UnityEngine.CoreModule.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.DirectorModule" Private="false">
+            <HintPath>..\..\Libs\UnityEngine.DirectorModule.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.PhysicsModule" Private="false">
+            <HintPath>..\..\Libs\UnityEngine.PhysicsModule.dll</HintPath>
+        </Reference>
+        <Reference Include="YamlDotNet, Version=11.0.0.0, Culture=neutral, PublicKeyToken=ec19458f3c15af5e, processorArchitecture=MSIL" Private="false">
+            <HintPath>..\packages\YamlDotNet.11.0.1\lib\net45\YamlDotNet.dll</HintPath>
+        </Reference>
+    </ItemGroup>
+    <ItemGroup>
+        <Compile Include="Commands\ConfirmLink\ConfirmLinkCommand.cs" />
+        <Compile Include="Config.cs" />
+        <Compile Include="Plugin.cs" />
+        <Compile Include="Properties\AssemblyInfo.cs"/>
+    </ItemGroup>
+    <!--<ItemGroup>
+      <None Include="App.config" />
+      <None Include="packages.config" />
+    </ItemGroup>-->
+    <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
+    <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+         Other similar extension points exist, see Microsoft.Common.targets.
+    <Target Name="BeforeBuild">
+    </Target>
+    <Target Name="AfterBuild">
+    </Target>
+    -->
+
+</Project>
