@@ -31,4 +31,5 @@ public class Channels
 {
     public ulong WarnRequestChannelId { get; set; } = 0;
     public ulong WarnHandlerResponseChannelId { get; set; } = 0;
+    public ulong PunishmentReportChannelId { get; set; } = 0;
 }
