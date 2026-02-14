@@ -103,6 +103,7 @@ public sealed class TrayApplicationContext : ApplicationContext
                 return Task.CompletedTask;
             };
 
+            _discord.ComponentInteractionCreated += GameTimePager.OnComponentAsync;
             _discord.ComponentInteractionCreated += WarnInteractions.OnComponentInteractionCreated;
             _discord.ModalSubmitted += WarnInteractions.OnModalSubmitted;
 
@@ -119,6 +120,7 @@ public sealed class TrayApplicationContext : ApplicationContext
             _slash.RegisterCommands<BasicSlashCommands>(Program.Config?.BotSettings.ServerId);
             _slash.RegisterCommands<WarnSlashCommands>(Program.Config?.BotSettings.ServerId);
             _slash.RegisterCommands<LinkSteamSlashCommand>(Program.Config?.BotSettings.ServerId);
+            _slash.RegisterCommands<GameTimeSlashCommand>(Program.Config?.BotSettings.ServerId);
 
             _commands = _discord.UseCommandsNext(new CommandsNextConfiguration
             {

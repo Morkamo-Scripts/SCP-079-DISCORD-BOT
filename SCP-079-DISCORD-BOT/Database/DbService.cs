@@ -1,5 +1,6 @@
 ﻿using Npgsql;
 using NpgsqlTypes;
+using SCP_079_DISCORD_BOT.Components;
 using SCP_079_DISCORD_BOT.Components.Enums;
 using SCP_079_DISCORD_BOT.Components.Records;
 
@@ -727,5 +728,152 @@ where discord_id = @discord_id;";
         await tx.CommitAsync();
 
         return updated > 0;
+    }
+    
+    public sealed record GameTimeDay(DateOnly Day, int Minutes);
+
+    public async Task AddGameTimeTickAsync(string serverCode, long[] steamIds, int addMinutes, DateTime utcNow)
+    {
+        if (string.IsNullOrWhiteSpace(serverCode))
+            return;
+
+        if (steamIds == null || steamIds.Length == 0)
+            return;
+
+        if (addMinutes <= 0)
+            return;
+
+        var day = DateOnly.FromDateTime(utcNow);
+
+        const string sql = @"
+    insert into game_time_daily (server_code, steamid64, day_date, minutes)
+    select @server_code, x.steamid64, @day_date, @add_minutes
+    from unnest(@steam_ids) as x(steamid64)
+    on conflict (server_code, steamid64, day_date)
+    do update set minutes = game_time_daily.minutes + excluded.minutes;";
+
+        await using var conn = new NpgsqlConnection(_connectionString);
+        await conn.OpenAsync();
+
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("server_code", serverCode);
+        cmd.Parameters.AddWithValue("day_date", day);
+        cmd.Parameters.AddWithValue("add_minutes", addMinutes);
+        cmd.Parameters.AddWithValue("steam_ids", steamIds);
+
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    public async Task<long?> GetLinkedSteamAsync(ulong discordId)
+    {
+        const string sql = @"
+    select linked_steam
+    from users
+    where discord_id = @discord_id
+    limit 1;";
+
+        await using var conn = new NpgsqlConnection(_connectionString);
+        await conn.OpenAsync();
+
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("discord_id", (long)discordId);
+
+        var result = await cmd.ExecuteScalarAsync();
+        if (result is null || result is DBNull)
+            return null;
+
+        return Convert.ToInt64(result);
+    }
+
+    public async Task<IReadOnlyList<GameTimeDay>> GetGameTimeDaysAsync(string serverCode, long steamId64, int days)
+    {
+        if (days < 1)
+            days = 1;
+
+        if (days > 90)
+            days = 90;
+
+        var anchor = DateOnly.FromDateTime(DateTime.Now);
+
+        const string sql = @"
+select day_date, minutes
+from game_time_daily
+where server_code = @server_code
+  and steamid64 = @steamid64
+  and day_date >= (@anchor_date - (@days::int - 1))
+  and day_date <= @anchor_date
+order by day_date desc;";
+
+        var list = new List<GameTimeDay>(days);
+
+        await using var conn = new NpgsqlConnection(_connectionString);
+        await conn.OpenAsync();
+
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("server_code", serverCode);
+        cmd.Parameters.AddWithValue("steamid64", steamId64);
+        cmd.Parameters.AddWithValue("anchor_date", anchor);
+        cmd.Parameters.AddWithValue("days", days);
+
+        await using var reader = await cmd.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            var day = reader.GetFieldValue<DateOnly>(0);
+            var minutes = reader.GetInt32(1);
+            list.Add(new GameTimeDay(day, minutes));
+        }
+
+        return list;
+    }
+
+    public async Task<int> GetGameTimeTotalMinutesAsync(string serverCode, long steamId64, int? days)
+    {
+        string sql;
+
+        var anchor = DateOnly.FromDateTime(DateTime.Now);
+
+        if (days.HasValue)
+        {
+            var d = days.Value;
+
+            if (d < 1)
+                d = 1;
+
+            if (d > 90)
+                d = 90;
+            Utils.BotLog($"GT anchor_date = {anchor:yyyy-MM-dd}", LogType.Info);
+
+            sql = @"
+select coalesce(sum(minutes), 0)
+from game_time_daily
+where server_code = @server_code
+  and steamid64 = @steamid64
+  and day_date >= (@anchor_date - (@days::int - 1))
+  and day_date <= @anchor_date;";
+        }
+        else
+        {
+            sql = @"
+select coalesce(sum(minutes), 0)
+from game_time_daily
+where server_code = @server_code
+  and steamid64 = @steamid64;";
+        }
+
+        await using var conn = new NpgsqlConnection(_connectionString);
+        await conn.OpenAsync();
+
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("server_code", serverCode);
+        cmd.Parameters.AddWithValue("steamid64", steamId64);
+
+        if (days.HasValue)
+        {
+            cmd.Parameters.AddWithValue("anchor_date", anchor);
+            cmd.Parameters.AddWithValue("days", Math.Clamp(days.Value, 1, 90));
+        }
+
+        var result = await cmd.ExecuteScalarAsync();
+        return Convert.ToInt32(result ?? 0);
     }
 }

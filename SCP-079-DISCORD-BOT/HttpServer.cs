@@ -23,7 +23,7 @@ public sealed class HttpServer
 
         if (!ps.ApiEnabled)
         {
-            Utils.BotLog("HTTP API is disabled by config.");
+            Utils.BotLog("HTTP API is disabled by config.", LogType.Info);
             return;
         }
 
@@ -57,7 +57,7 @@ public sealed class HttpServer
                     var code = request.Code.Trim().ToUpperInvariant();
                     var steamId = request.SteamId.Trim();
 
-                    Utils.BotLog($"HTTP API confirm request: Code={code}, Steam={steamId}");
+                    Utils.BotLog($"HTTP API confirm request: Code={code}, Steam={steamId}", LogType.Info);
 
                     var db = _dbAccessor();
                     if (db is null)
@@ -77,7 +77,7 @@ public sealed class HttpServer
                         return Results.StatusCode(500);
                     }
 
-                    Utils.BotLog($"HTTP API confirm result: {result}");
+                    Utils.BotLog($"HTTP API confirm result: {result}", LogType.Info);
 
                     return result switch
                     {
@@ -89,6 +89,46 @@ public sealed class HttpServer
                     };
                 });
 
+                app.MapPost("/api/gametime/tick", async (GameTimeTickRequest request) =>
+                {
+                    if (!string.Equals(request.Secret, ps.ApiSecret, StringComparison.Ordinal))
+                        return Results.Unauthorized();
+
+                    if (string.IsNullOrWhiteSpace(request.Server))
+                        return Results.BadRequest(new { error = "invalid_payload" });
+
+                    if (request.Minutes <= 0)
+                        return Results.BadRequest(new { error = "invalid_minutes" });
+
+                    if (request.SteamIds is null || request.SteamIds.Length == 0)
+                        return Results.Ok(new { success = true, applied = 0 });
+
+                    var db = _dbAccessor();
+                    if (db is null)
+                    {
+                        Utils.BotLog("GameTime tick failed: DbService is not initialized (503).", LogType.Error);
+                        return Results.StatusCode(503);
+                    }
+
+                    var server = request.Server.Trim().ToLowerInvariant();
+                    if (server.Length > 64)
+                        return Results.BadRequest(new { error = "invalid_server" });
+
+                    try
+                    {
+                        Utils.BotLog($"GameTime tick: server={server}, add={request.Minutes}, players={request.SteamIds.Length}", LogType.Info);
+
+                        await db.AddGameTimeTickAsync(server, request.SteamIds, request.Minutes, DateTime.UtcNow);
+
+                        return Results.Ok(new { success = true, applied = request.SteamIds.Length });
+                    }
+                    catch (Exception ex)
+                    {
+                        Utils.BotLog($"GameTime tick exception: {ex}", LogType.Error);
+                        return Results.StatusCode(500);
+                    }
+                });
+
                 Utils.BotLog($"HTTP API started: {url}", LogType.Complete);
                 await app.RunAsync(url).ConfigureAwait(false);
             }
@@ -97,6 +137,14 @@ public sealed class HttpServer
                 Utils.BotLog($"HTTP API host failed: {ex}", LogType.Error);
             }
         });
+    }
+
+    private sealed class GameTimeTickRequest
+    {
+        public string Secret { get; set; } = string.Empty;
+        public string Server { get; set; } = string.Empty;
+        public int Minutes { get; set; } = 1;
+        public long[] SteamIds { get; set; } = Array.Empty<long>();
     }
 
     private sealed class ConfirmLinkRequest
