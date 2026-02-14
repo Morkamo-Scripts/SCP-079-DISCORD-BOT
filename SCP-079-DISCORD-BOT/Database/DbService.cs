@@ -616,4 +616,116 @@ limit 1;";
             created
         );
     }
+    
+    public async Task<ConfirmResult> ConfirmSteamLinkAsync(string code, string steamId, TimeSpan ttl, CancellationToken ct = default)
+    {
+        code = (code ?? string.Empty).Trim().ToUpperInvariant();
+        steamId = (steamId ?? string.Empty).Trim();
+
+        if (code.Length != 6)
+            return ConfirmResult.NotFound;
+
+        if (!long.TryParse(steamId, out var steamId64))
+            return ConfirmResult.Mismatch;
+
+        await using var conn = new NpgsqlConnection(_connectionString);
+        await conn.OpenAsync(ct);
+
+        long discordId;
+        long requestedSteamId64;
+        DateTimeOffset createdAt;
+
+        const string selectSql = @"
+            select discord_id, steamid64, created_at
+            from steam_link_requests
+            where code = @code
+            limit 1;";
+
+        await using (var cmd = new NpgsqlCommand(selectSql, conn))
+        {
+            cmd.Parameters.AddWithValue("code", code);
+
+            await using var reader = await cmd.ExecuteReaderAsync(ct);
+            if (!await reader.ReadAsync(ct))
+                return ConfirmResult.NotFound;
+
+            discordId = reader.GetInt64(reader.GetOrdinal("discord_id"));
+            requestedSteamId64 = reader.GetInt64(reader.GetOrdinal("steamid64"));
+            createdAt = reader.GetFieldValue<DateTimeOffset>(reader.GetOrdinal("created_at"));
+        }
+
+        var age = DateTimeOffset.UtcNow - createdAt;
+        if (age > ttl)
+        {
+            const string deleteExpired = @"delete from steam_link_requests where discord_id = @discord_id;";
+            await using var cmd = new NpgsqlCommand(deleteExpired, conn);
+            cmd.Parameters.AddWithValue("discord_id", discordId);
+            await cmd.ExecuteNonQueryAsync(ct);
+            return ConfirmResult.Expired;
+        }
+
+        if (requestedSteamId64 != steamId64)
+            return ConfirmResult.Mismatch;
+
+        await using var tx = await conn.BeginTransactionAsync(ct);
+
+        const string upsertUser = @"
+            insert into users (discord_id, linked_steam)
+            values (@discord_id, @steamid64)
+            on conflict (discord_id) do update
+            set linked_steam = excluded.linked_steam;";
+
+        const string deleteReq = @"delete from steam_link_requests where discord_id = @discord_id;";
+
+        await using (var cmd = new NpgsqlCommand(upsertUser, conn, tx))
+        {
+            cmd.Parameters.AddWithValue("discord_id", discordId);
+            cmd.Parameters.AddWithValue("steamid64", steamId64);
+            await cmd.ExecuteNonQueryAsync(ct);
+        }
+
+        await using (var cmd = new NpgsqlCommand(deleteReq, conn, tx))
+        {
+            cmd.Parameters.AddWithValue("discord_id", discordId);
+            await cmd.ExecuteNonQueryAsync(ct);
+        }
+
+        await tx.CommitAsync(ct);
+        return ConfirmResult.Success;
+    }
+
+    public async Task<bool> UnlinkSteamAsync(ulong discordId)
+    {
+        await using var conn = new NpgsqlConnection(_connectionString);
+        await conn.OpenAsync();
+
+        await using var tx = await conn.BeginTransactionAsync();
+
+        const string updateSql = @"
+update users
+set linked_steam = null
+where discord_id = @discord_id
+  and linked_steam is not null;";
+
+        const string deleteReqSql = @"
+delete from steam_link_requests
+where discord_id = @discord_id;";
+
+        int updated;
+        await using (var cmd = new NpgsqlCommand(updateSql, conn, tx))
+        {
+            cmd.Parameters.AddWithValue("discord_id", (long)discordId);
+            updated = await cmd.ExecuteNonQueryAsync();
+        }
+
+        await using (var cmd = new NpgsqlCommand(deleteReqSql, conn, tx))
+        {
+            cmd.Parameters.AddWithValue("discord_id", (long)discordId);
+            await cmd.ExecuteNonQueryAsync();
+        }
+
+        await tx.CommitAsync();
+
+        return updated > 0;
+    }
 }

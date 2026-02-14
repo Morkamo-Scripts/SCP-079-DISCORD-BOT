@@ -75,7 +75,7 @@ public class LinkSteamSlashCommand : ApplicationCommandModule
             "Код подтверждения привязки Steam:\n" +
             $"`{req.Code}`\n\n" +
             "Зайдите на сервер и подтвердите привязку через команду:\n" +
-            $"/confirmLink {req.Code}\n\n" +
+            $"clink {req.Code}\n\n" +
             "Код действителен 10 минут.";
 
         try
@@ -87,7 +87,7 @@ public class LinkSteamSlashCommand : ApplicationCommandModule
                 "Запрос получен",
                 "Код подтверждения отправлен вам в личные сообщения.\n" +
                 "Пожалуйста зайдите на сервер и подтвердите привязку через команду:\n" +
-                "`/confirmLink {КОД}`",
+                "`clink {КОД}`",
                 DiscordColor.Orange);
         }
         catch
@@ -105,12 +105,40 @@ public class LinkSteamSlashCommand : ApplicationCommandModule
         Utils.BotLog($"[{DateTime.Now}] '{ctx.Member?.DisplayName}' used slash command -> '{nameof(UnlinkSteam)}' -> #{ctx.Channel.Name}");
 
         await ctx.CreateResponseAsync(
-            InteractionResponseType.ChannelMessageWithSource,
-            new DiscordInteractionResponseBuilder()
+            InteractionResponseType.DeferredChannelMessageWithSource,
+            new DiscordInteractionResponseBuilder());
+
+        try
+        {
+            var ok = await Program.Db!.UnlinkSteamAsync(ctx.User.Id);
+
+            if (ok)
+            {
+                await ctx.EditResponseAsync(new DiscordWebhookBuilder()
+                    .AddEmbed(new DiscordEmbedBuilder()
+                        .WithTitle("Готово")
+                        .WithDescription("Аккаунт Steam успешно отвязан от вашего Discord.")
+                        .WithColor(DiscordColor.Orange)));
+            }
+            else
+            {
+                await ctx.EditResponseAsync(new DiscordWebhookBuilder()
+                    .AddEmbed(new DiscordEmbedBuilder()
+                        .WithTitle("Нет активной привязки")
+                        .WithDescription("У вас нет активной привязки Steam. Если вы хотели привязать аккаунт - используйте /linkSteam.")
+                        .WithColor(DiscordColor.Orange)));
+            }
+        }
+        catch (Exception ex)
+        {
+            Utils.BotLog($"UnlinkSteam DB ERROR: {ex}", LogType.Error);
+
+            await ctx.EditResponseAsync(new DiscordWebhookBuilder()
                 .AddEmbed(new DiscordEmbedBuilder()
-                    .WithTitle("В разработке")
-                    .WithDescription("Механика отвязки будет добавлена следующим шагом.")
-                    .WithColor(DiscordColor.Orange)));
+                    .WithTitle("Ошибка")
+                    .WithDescription("Не удалось выполнить отвязку. Попробуйте позже.")
+                    .WithColor(DiscordColor.Red)));
+        }
     }
 
     private static async Task EditEmbedAsync(InteractionContext ctx, string title, string description, DiscordColor color)

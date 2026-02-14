@@ -8,5 +8,9 @@ namespace Scp079BotIntegration
         public bool Debug { get; set; } = false;
 
         public string ServerIdenifier { get; set; } = "Classic";
+        
+        public string ApiBaseUrl { get; set; } = "http://127.0.0.1:5005";
+        public string ApiSecret { get; set; } = "SUPER_LONG_RANDOM_SECRET_STRING";
+        public int ApiTimeoutSeconds { get; set; } = 5;
     }
 }
